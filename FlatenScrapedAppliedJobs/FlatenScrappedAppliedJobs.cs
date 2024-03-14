@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using OfficeOpenXml;
 
-namespace FlatenScrapedAppliedJobsspace // Replace with your actual namespace
+namespace FlatenScrapedAppliedJobsspace
 {
     public class Program
     {
@@ -22,20 +22,32 @@ namespace FlatenScrapedAppliedJobsspace // Replace with your actual namespace
             var inputFilePath = Configuration["InputFilePath"];
             var outFilePath = Configuration["OutputFilePath"];
             var outFileName = Configuration["OutputFileName"];
+ 
+            // Deserialize the configuration OutputColumns section into the record
+            var outputColumnLocations = Configuration.GetSection("OutputColumnsLocation").Get<ColumnsOutputColumnLocation>();
+
 
             var flattener = new FlattenLinkedInAppliedJobs();
 
             Directory.SetCurrentDirectory(outFilePath);  // i want to generate the file in the correct folder
             string filePathName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss-") + outFileName;
-            flattener.ProcessExcelFile(inputFilePath, filePathName);
+            flattener.ProcessExcelFile(inputFilePath, filePathName, outputColumnLocations);
 
             Console.WriteLine("Conversion completed.");
         }
     }
 
+    public record ColumnsOutputColumnLocation
+    {
+        public int CompanyNameColumnNumber { get; init; }
+        public int PositionColumnNumber { get; init; }
+        public int LocationColumnNumber { get; init; }
+    }
+
+
     public class FlattenLinkedInAppliedJobs
     {
-        public void ProcessExcelFile(string inputFilePathName, string outputFilePathName)
+        public void ProcessExcelFile(string inputFilePathName, string outputFilePathName, ColumnsOutputColumnLocation outputColumnLocations)
         {
             // Correctly specifying the EPPlus LicenseContext
             OfficeOpenXml.ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
@@ -64,9 +76,9 @@ namespace FlatenScrapedAppliedJobsspace // Replace with your actual namespace
                             var location = reader.GetValue(0)?.ToString();
 
                             // Write the extracted information to the designated columns in the output Excel
-                            worksheet.Cells[recordIndex, 2].Value = companyName; // Company Name in column B
-                            worksheet.Cells[recordIndex, 5].Value = position; // Position in column E
-                            worksheet.Cells[recordIndex, 7].Value = location; // Location in column G
+                            worksheet.Cells[recordIndex, outputColumnLocations.CompanyNameColumnNumber].Value = companyName; // Company Name in column B
+                            worksheet.Cells[recordIndex, outputColumnLocations.PositionColumnNumber].Value = position; // Position in column E
+                            worksheet.Cells[recordIndex, outputColumnLocations.LocationColumnNumber].Value = location; // Location in column G
 
                             recordIndex++; // Move to the next row for the next set of data in the output Excel
 
