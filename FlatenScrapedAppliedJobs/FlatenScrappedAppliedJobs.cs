@@ -31,9 +31,11 @@ namespace FlatenScrapedAppliedJobsspace
 
             Directory.SetCurrentDirectory(outFilePath);  // i want to generate the file in the correct folder
             string filePathName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss-") + outFileName;
-            flattener.ProcessExcelFile(inputFilePath, filePathName, outputColumnLocations);
+            var message = flattener.ProcessExcelFile(inputFilePath, filePathName, outputColumnLocations);
 
-            Console.WriteLine("Conversion completed.");
+            Console.WriteLine("Processing File: '{0}'", inputFilePath);
+            Console.WriteLine("        to File: '{0}'", filePathName);
+            Console.WriteLine("        Message: '{0}'", message);
         }
     }
 
@@ -47,8 +49,10 @@ namespace FlatenScrapedAppliedJobsspace
 
     public class FlattenLinkedInAppliedJobs
     {
-        public void ProcessExcelFile(string inputFilePathName, string outputFilePathName, ColumnsOutputColumnLocation outputColumnLocations)
+        public string ProcessExcelFile(string inputFilePathName, string outputFilePathName, ColumnsOutputColumnLocation outputColumnLocations)
         {
+            string Message = "";
+
             // Correctly specifying the EPPlus LicenseContext
             OfficeOpenXml.ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
 
@@ -58,41 +62,48 @@ namespace FlatenScrapedAppliedJobsspace
                 int recordIndex = 1; // Start writing from the first row in the Excel sheet
 
                 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-                using (var stream = File.Open(inputFilePathName, FileMode.Open, FileAccess.Read))
+                try
                 {
-                    using (var reader = ExcelReaderFactory.CreateReader(stream))
+                    using (var stream = File.Open(inputFilePathName, FileMode.Open, FileAccess.Read))
                     {
-                        while (reader.Read()) // Each read operation moves to the next row in the input Excel
+                        using (var reader = ExcelReaderFactory.CreateReader(stream))
                         {
-                            // Assuming the first two rows are to be ignored for each record set
-                            reader.Read(); // Skipping the second row (image with URL)
-                            reader.Read(); // Now on the row with position data
+                            while (reader.Read()) // Each read operation moves to the next row in the input Excel
+                            {
+                                // Assuming the first two rows are to be ignored for each record set
+                                reader.Read(); // Skipping the second row (image with URL)
+                                reader.Read(); // Now on the row with position data
 
-                            // Extract the relevant information
-                            var position = reader.GetValue(0)?.ToString(); // This should now be the position
-                            reader.Read(); // Next row, expected to be the company name
-                            var companyName = reader.GetValue(0)?.ToString();
-                            reader.Read(); // Following row, expected to be the location
-                            var location = reader.GetValue(0)?.ToString();
+                                // Extract the relevant information
+                                var position = reader.GetValue(0)?.ToString(); // This should now be the position
+                                reader.Read(); // Next row, expected to be the company name
+                                var companyName = reader.GetValue(0)?.ToString();
+                                reader.Read(); // Following row, expected to be the location
+                                var location = reader.GetValue(0)?.ToString();
 
-                            // Write the extracted information to the designated columns in the output Excel
-                            worksheet.Cells[recordIndex, outputColumnLocations.CompanyNameColumnNumber].Value = companyName; // Company Name in column B
-                            worksheet.Cells[recordIndex, outputColumnLocations.PositionColumnNumber].Value = position; // Position in column E
-                            worksheet.Cells[recordIndex, outputColumnLocations.LocationColumnNumber].Value = location; // Location in column G
+                                // Write the extracted information to the designated columns in the output Excel
+                                worksheet.Cells[recordIndex, outputColumnLocations.CompanyNameColumnNumber].Value = companyName; // Company Name in column B
+                                worksheet.Cells[recordIndex, outputColumnLocations.PositionColumnNumber].Value = position; // Position in column E
+                                worksheet.Cells[recordIndex, outputColumnLocations.LocationColumnNumber].Value = location; // Location in column G
 
-                            recordIndex++; // Move to the next row for the next set of data in the output Excel
+                                recordIndex++; // Move to the next row for the next set of data in the output Excel
 
-                            reader.Read(); // Skip the "Applied X ago" row, moving to the next record
+                                reader.Read(); // Skip the "Applied X ago" row, moving to the next record
+                            }
                         }
                     }
                 }
-
+                catch (System.IO.IOException ex) 
+                {
+                    Message = ex.Message;
+                }
  
                 var fileInfo = new FileInfo(outputFilePathName);
                 package.SaveAs(fileInfo); // Save the new Excel file
             }
 
-            Console.WriteLine("File: '{0}' created successfully.", outputFilePathName);
+            return (Message);
+
         }
     }
  }
