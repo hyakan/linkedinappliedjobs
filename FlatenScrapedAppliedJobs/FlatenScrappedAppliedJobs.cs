@@ -56,50 +56,51 @@ namespace FlatenScrapedAppliedJobsspace
             // Correctly specifying the EPPlus LicenseContext
             OfficeOpenXml.ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
 
-            using (var package = new ExcelPackage())
+            try
             {
-                var worksheet = package.Workbook.Worksheets.Add("Jobs");
-                int recordIndex = 1; // Start writing from the first row in the Excel sheet
-
-                System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-                try
+                using (var package = new ExcelPackage())
                 {
-                    using (var stream = File.Open(inputFilePathName, FileMode.Open, FileAccess.Read))
-                    {
-                        using (var reader = ExcelReaderFactory.CreateReader(stream))
+                    var worksheet = package.Workbook.Worksheets.Add("Jobs");
+                    int recordIndex = 1; // Start writing from the first row in the Excel sheet
+
+                    System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+                        using (var stream = File.Open(inputFilePathName, FileMode.Open, FileAccess.Read))
                         {
-                            while (reader.Read()) // Each read operation moves to the next row in the input Excel
+                            using (var reader = ExcelReaderFactory.CreateReader(stream))
                             {
-                                // Assuming the first two rows are to be ignored for each record set
-                                reader.Read(); // Skipping the second row (image with URL)
-                                reader.Read(); // Now on the row with position data
+                                while (reader.Read()) // Each read operation moves to the next row in the input Excel
+                                {
+                                    // Assuming the first two rows are to be ignored for each record set
+                                    reader.Read(); // Skipping the second row (image with URL)
+                                    reader.Read(); // Now on the row with position data
+                                    var possibleUrl = reader.GetValue(0)?.ToString();
 
-                                // Extract the relevant information
-                                var position = reader.GetValue(0)?.ToString(); // This should now be the position
-                                reader.Read(); // Next row, expected to be the company name
-                                var companyName = reader.GetValue(0)?.ToString();
-                                reader.Read(); // Following row, expected to be the location
-                                var location = reader.GetValue(0)?.ToString();
+                                    // Extract the relevant information
+                                    var position = reader.GetValue(0)?.ToString(); // This should now be the position
+                                    reader.Read(); // Next row, expected to be the company name
+                                    var companyName = reader.GetValue(0)?.ToString();
+                                    reader.Read(); // Following row, expected to be the location
+                                    var location = reader.GetValue(0)?.ToString();
 
-                                // Write the extracted information to the designated columns in the output Excel
-                                worksheet.Cells[recordIndex, outputColumnLocations.CompanyNameColumnNumber].Value = companyName; // Company Name in column B
-                                worksheet.Cells[recordIndex, outputColumnLocations.PositionColumnNumber].Value = position; // Position in column E
-                                worksheet.Cells[recordIndex, outputColumnLocations.LocationColumnNumber].Value = location; // Location in column G
+                                    // Write the extracted information to the designated columns in the output Excel
+                                    worksheet.Cells[recordIndex, outputColumnLocations.CompanyNameColumnNumber].Value = companyName; // Company Name in column B
+                                    worksheet.Cells[recordIndex, outputColumnLocations.PositionColumnNumber].Value = position; // Position in column E
+                                    worksheet.Cells[recordIndex, outputColumnLocations.LocationColumnNumber].Value = location; // Location in column G
 
-                                recordIndex++; // Move to the next row for the next set of data in the output Excel
+                                    recordIndex++; // Move to the next row for the next set of data in the output Excel
 
-                                reader.Read(); // Skip the "Applied X ago" row, moving to the next record
+                                    reader.Read(); // Skip the "Applied X ago" row, moving to the next record
+                                }
                             }
                         }
-                    }
+                    var fileInfo = new FileInfo(outputFilePathName);
+                    package.SaveAs(fileInfo); // Save the new Excel file
                 }
-                catch (System.IO.IOException ex) 
-                {
-                    Message = ex.Message;
-                }
- 
-                var fileInfo = new FileInfo(outputFilePathName);
-                package.SaveAs(fileInfo); // Save the new Excel file
+
+            }
+            catch(System.IO.IOException ex)
+            {
+                Message = ex.Message;
             }
 
             return (Message);
