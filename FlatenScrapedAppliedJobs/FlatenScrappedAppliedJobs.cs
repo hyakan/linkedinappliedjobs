@@ -70,22 +70,22 @@ namespace FlatenScrapedAppliedJobsspace
                             {
                                 while (reader.Read()) // Each read operation moves to the next row in the input Excel
                                 {
-                                    // Assuming the first two rows are to be ignored for each record set
-                                    reader.Read(); // Skipping the second row (image with URL)
-                                    reader.Read(); // Now on the row with position data
-                                    var possibleUrl = reader.GetValue(0)?.ToString();
+                                    // ignore the first two rows  (they have the icon), the first read call was in the while 
+                                    reader.Read(); // Skipping the second row
 
-                                    // Extract the relevant information
+                                    reader.Read(); // Now on the row with position data
                                     var position = reader.GetValue(0)?.ToString(); // This should now be the position
+
                                     reader.Read(); // Next row, expected to be the company name
                                     var companyName = reader.GetValue(0)?.ToString();
+
                                     reader.Read(); // Following row, expected to be the location
                                     var location = reader.GetValue(0)?.ToString();
 
                                     // Write the extracted information to the designated columns in the output Excel
-                                    worksheet.Cells[recordIndex, outputColumnLocations.CompanyNameColumnNumber].Value = companyName; // Company Name in column B
-                                    worksheet.Cells[recordIndex, outputColumnLocations.PositionColumnNumber].Value = position; // Position in column E
-                                    worksheet.Cells[recordIndex, outputColumnLocations.LocationColumnNumber].Value = location; // Location in column G
+                                    worksheet.Cells[recordIndex, outputColumnLocations.CompanyNameColumnNumber].Value = companyName;
+                                    worksheet.Cells[recordIndex, outputColumnLocations.PositionColumnNumber].Value = position; 
+                                    worksheet.Cells[recordIndex, outputColumnLocations.LocationColumnNumber].Value = location; 
 
                                     recordIndex++; // Move to the next row for the next set of data in the output Excel
 
