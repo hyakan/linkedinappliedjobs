@@ -44,6 +44,7 @@ namespace FlatenScrapedAppliedJobsspace
         public int CompanyNameColumnNumber { get; init; }
         public int PositionColumnNumber { get; init; }
         public int LocationColumnNumber { get; init; }
+        public int AppliedTimeColumnNumber { get; init; }
     }
 
 
@@ -82,14 +83,16 @@ namespace FlatenScrapedAppliedJobsspace
                                     reader.Read(); // Following row, expected to be the location
                                     var location = reader.GetValue(0)?.ToString();
 
+                                    reader.Read(); // "Applied X ago" row, moving to the next record
+                                    var AppliedTime = reader.GetValue(0)?.ToString();
+
                                     // Write the extracted information to the designated columns in the output Excel
                                     worksheet.Cells[recordIndex, outputColumnLocations.CompanyNameColumnNumber].Value = companyName;
                                     worksheet.Cells[recordIndex, outputColumnLocations.PositionColumnNumber].Value = position; 
                                     worksheet.Cells[recordIndex, outputColumnLocations.LocationColumnNumber].Value = location; 
+                                    worksheet.Cells[recordIndex, outputColumnLocations.AppliedTimeColumnNumber].Value = AppliedTime; 
 
-                                    recordIndex++; // Move to the next row for the next set of data in the output Excel
-
-                                    reader.Read(); // Skip the "Applied X ago" row, moving to the next record
+                                    recordIndex++; // Move to the next row for the next set of data (one record) in the output Excel
                                 }
                             }
                         }
